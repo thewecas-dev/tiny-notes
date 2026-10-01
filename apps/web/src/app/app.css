@@ -1,0 +1,8 @@
+app-create-note,
+app-open-note {
+  display: block;
+}
+
+.how {
+  scroll-margin-top: 24px;
+}

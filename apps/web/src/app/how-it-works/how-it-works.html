@@ -1,0 +1,24 @@
+<section class="section" aria-labelledby="how-title">
+  <h2 id="how-title" class="section-title">How it works</h2>
+  <ol class="steps">
+    @for (step of steps; track step.title; let i = $index) {
+      <li class="step">
+        <span class="step-number" aria-hidden="true">{{ i + 1 }}</span>
+        <h3>{{ step.title }}</h3>
+        <p>{{ step.text }}</p>
+      </li>
+    }
+  </ol>
+</section>
+
+<section class="section" aria-labelledby="facts-title">
+  <h2 id="facts-title" class="section-title">Good to know</h2>
+  <ul class="facts">
+    @for (fact of facts; track fact.title) {
+      <li>
+        <h3>{{ fact.title }}</h3>
+        <p>{{ fact.text }}</p>
+      </li>
+    }
+  </ul>
+</section>

@@ -1,0 +1,17 @@
+{
+  "name": "tiny-notes",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,magenta \"npm run dev -w api\" \"npm start -w web\"",
+    "build": "npm run build -w api && npm run build -w web",
+    "start": "npm start -w api",
+    "test": "npm test -w api"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}
