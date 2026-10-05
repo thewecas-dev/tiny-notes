@@ -18,7 +18,9 @@ const SCHEMA = `
 export function openDb(path: string): Db {
   if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
   const db = new Database(path);
-  db.pragma('journal_mode = WAL');
+  // Rollback journal, not WAL: every committed row is in notes.db itself, so the one file
+  // is the whole database. Set explicitly because a file created in WAL mode stays in it.
+  db.pragma('journal_mode = DELETE');
   db.exec(SCHEMA);
   return db;
 }
