@@ -5,6 +5,12 @@ const KEY = /^[\w-]{43}$/;
 // Largest note that still fits the server's 100 KB request cap once encrypted and encoded.
 const MAX_BYTES = 75_000;
 
+// "2 minutes" or "40 seconds", from the server's Retry-After header.
+const retryAfter = (response) => {
+  const seconds = Number(response.headers.get('Retry-After')) || 60;
+  return seconds >= 90 ? `${Math.ceil(seconds / 60)} minutes` : `${seconds} seconds`;
+};
+
 const show = (el, message) => {
   el.textContent = message;
   el.hidden = false;
@@ -101,6 +107,10 @@ if (form) {
             expires_in: expiresIn(),
           }),
         });
+        if (response.status === 429) {
+          submit.disabled = false;
+          return show(error, `Too many notes created from this network. Try again in ${retryAfter(response)}.`);
+        }
         if (!response.ok) throw new Error(String(response.status));
         const { code } = await response.json();
         // The key goes after the #, so it is never part of any request.
@@ -165,6 +175,10 @@ if (waiting) {
     try {
       const response = await fetch(`/notes/${waiting.dataset.code}`);
       if (response.status === 404) return swap('#gone-template');
+      if (response.status === 429) {
+        reveal.disabled = false;
+        return show(error, `Too many requests from this network. No view was used. Try again in ${retryAfter(response)}.`);
+      }
       if (!response.ok) throw new Error(String(response.status));
       const { content, views_left: viewsLeft } = await response.json();
 

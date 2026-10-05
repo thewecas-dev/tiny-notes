@@ -7,6 +7,7 @@ export type ErrorCode =
   | 'invalid_field'
   | 'payload_too_large'
   | 'not_found'
+  | 'rate_limited'
   | 'internal_error';
 
 export class ApiError extends Error {
@@ -45,6 +46,7 @@ const PAGE_ERRORS: Record<number, [heading: string, text: string]> = {
   400: ['That request could not be processed', 'Go back and try again.'],
   404: ['Page not found', 'There is nothing at this address.'],
   413: ['That note is too large', 'A note can hold up to 100 KB of text.'],
+  429: ['Too many requests', 'Wait a minute, then try again.'],
   500: ['Something went wrong', 'Please try again in a moment.'],
 };
 

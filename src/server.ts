@@ -10,7 +10,12 @@ const dbPath = process.env.NOTES_DB ?? resolve(import.meta.dirname, '../data/not
 const db = openDb(dbPath);
 const stopCleanup = startCleanup(createNotesRepo(db), systemNow);
 // SITE_URL has no trailing slash, e.g. https://notes.example.com
-const app = createApp({ db, siteUrl: process.env.SITE_URL });
+// TRUST_PROXY is the number of reverse proxies in front of the app (1 behind nginx).
+const app = createApp({
+  db,
+  siteUrl: process.env.SITE_URL,
+  trustProxy: Number(process.env.TRUST_PROXY ?? 0),
+});
 
 const server = app.listen(port, () => {
   console.log(`tiny-notes listening on http://localhost:${port}`);

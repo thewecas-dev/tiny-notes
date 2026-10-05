@@ -1,12 +1,81 @@
-# Tiny Notes
+<p align="center">
+  <img src="public/favicon.svg" width="88" alt="Tiny Notes logo">
+</p>
 
-Notes that delete themselves. Store a piece of text, get a short code, and the note is deleted after a set number of views or a set time, whichever comes first. The full requirement is in [req.md](req.md).
+<h1 align="center">Tiny Notes</h1>
 
-One Node + Express process serves both the JSON API and the web pages. Pages are rendered on the server; there is no frontend build.
+<p align="center">End-to-end encrypted notes that delete themselves.</p>
 
-Notes written on the site are **end-to-end encrypted**: the browser encrypts them before sending, and the server stores only ciphertext it has no key for.
+![Tiny Notes preview: Share it once. Then it's gone.](public/og.png)
 
-## Layout
+## What it is
+
+Tiny Notes is a small web app for sending something you don't want lying around afterwards: a password, an API key, a one-off message. You write the note, get a link, and send the link. The note deletes itself after it has been opened a set number of times or when its timer runs out, whichever comes first.
+
+The note is encrypted in your browser before it is sent. The server stores only locked text it has no key for, so nobody on the server side can read a note: not the app, not its operators, not someone holding a copy of the database.
+
+There are no accounts and nothing to install. It runs as one Node process with one SQLite file.
+
+## How it works
+
+1. **Write it.** Type or paste your text, choose how many times it can be opened (1 to 100) and how long it lasts (1 minute to 7 days).
+2. **Your browser locks it.** A random 256-bit key is made on your device and the note is encrypted with AES-256-GCM. Only the locked text is sent.
+3. **Share the link.** The link looks like `https://host/n/aB3xK9pQ#<key>`. The key sits after the `#`, a part of the address that browsers never send to any server.
+4. **The recipient reveals it.** Opening the link shows how many views are left and when it expires. Pressing **Reveal note** fetches the locked text and unlocks it in their browser.
+5. **It disappears.** After the last view, or at expiry, the locked note is deleted from the server.
+
+The note and its key take different routes, and only the two ends ever hold both:
+
+```mermaid
+sequenceDiagram
+    participant A as Your browser
+    participant S as Server
+    participant B as Recipient's browser
+    A->>A: Make a key, encrypt the note
+    A->>S: Locked text, view limit, expiry
+    S-->>A: Short code
+    A-->>B: Link with code and #key (sent by you, outside the app)
+    B->>S: Ask for the note by code
+    S-->>B: Locked text (one view used, deleted after the last)
+    B->>B: Unlock with the key from the link
+```
+
+## What it does
+
+- **End-to-end encryption.** Encryption and decryption happen in the browser. The key is never sent to, logged by, or stored on the server.
+- **View and time limits.** Each note has a view count and an expiry. It is gone as soon as either runs out.
+- **One view means one reader.** If two people press Reveal on a one-view note at the same moment, exactly one of them gets it.
+- **Opening a link is free.** The note page only shows status. A view is used only when someone presses Reveal, so link previews in chat apps cannot burn a note.
+- **Live view of what the server receives.** While you type, the page shows the actual encrypted text that would be sent.
+- **Expanded view.** One button makes the note card fill the window, for writing or reading longer text.
+- **Used, expired and unknown links look the same.** Nobody can probe which notes exist.
+- **Search friendly, privately.** The home page is fully indexable; note pages are never indexed or cached.
+- **Rate limited.** Each network can create 20 notes per 10 minutes, so one client cannot fill the disk.
+- **A plain JSON API** underneath, for scripts and other clients.
+
+Limits: plain text up to 75 KB on the site, 1 to 100 views, 1 minute to 7 days.
+
+## Run it
+
+```sh
+npm install
+npm run dev      # http://localhost:3000, restarts on change
+npm test
+npm run build && npm start
+```
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `PORT` | `3000` | Port to listen on |
+| `NOTES_DB` | `data/notes.db` | SQLite file |
+| `TRUST_PROXY` | `0` | Number of reverse proxies in front of the app (`1` behind nginx or a platform load balancer). **Set this in production**, or every visitor shares one rate limit |
+| `SITE_URL` | request host | Public origin without a trailing slash, e.g. `https://notes.example.com`. **Set this in production**: canonical URLs, share links, the preview image URL and the sitemap use it |
+
+The site needs HTTPS in production (or `localhost` in development), because browsers only allow encryption on secure pages.
+
+## Project layout
+
+One Node + Express process serves both the JSON API and the web pages. Pages are rendered on the server from template strings; there is no frontend build.
 
 | Path | What |
 | --- | --- |
@@ -17,23 +86,7 @@ Notes written on the site are **end-to-end encrypted**: the browser encrypts the
 | `public/app.js` | Page behaviour: encrypts and sends a note, fetches and decrypts one, live readouts |
 | `public/` (rest) | Stylesheet, fonts, logo and preview image |
 | `test/` | API and page tests |
-
-## Run
-
-```sh
-npm install
-npm run dev      # http://localhost:3000, restarts on change
-npm test
-npm run build && npm start
-```
-
-Environment variables:
-
-| Name | Default | Purpose |
-| --- | --- | --- |
-| `PORT` | `3000` | Port to listen on |
-| `NOTES_DB` | `data/notes.db` | SQLite file |
-| `SITE_URL` | request host | Public origin without a trailing slash, e.g. `https://notes.example.com`. **Set this in production**: canonical URLs, share links and the sitemap use it |
+| `req.md` | The original requirement for the API |
 
 ## Pages
 
@@ -43,22 +96,7 @@ Environment variables:
 | `GET /open` | Find a note from a pasted link (parsed in the browser, never sent) | No |
 | `GET /n/{code}` | Note status. Never uses a view | No |
 
-Share links look like `https://host/n/aB3xK9pQ#<key>`. Creating and revealing go through the JSON API from `public/app.js`.
-
-## End-to-end encryption
-
-1. When the page opens, the browser generates a random 256-bit key.
-2. On submit it encrypts the note with AES-256-GCM (fresh random IV each time) and posts `base64url(iv + ciphertext + tag)` as `content`.
-3. The key is placed after the `#` in the share link. Browsers do not send the fragment in requests, so the key never reaches the server, its logs or the database.
-4. The recipient's browser fetches the ciphertext and decrypts it with the key from the link.
-
-What this means:
-
-- The server, its operators, and anyone with the database or a backup hold only ciphertext.
-- A lost link cannot be recovered: nobody else ever had the key.
-- The site needs JavaScript and a secure context (HTTPS, or `localhost` in development).
-- The page's own code does the encrypting, so users trust the server to deliver honest code. A strict Content-Security-Policy (`default-src 'self'`) rules out inline and third-party scripts.
-- The JSON API itself stores whatever string it is given. API clients that want the same protection must encrypt before calling it; `public/crypto.js` is the reference.
+Creating and revealing go through the JSON API from `public/app.js`.
 
 ## API
 
@@ -70,16 +108,36 @@ What this means:
 
 Errors are JSON: `{ "error": "<code>", "message": "<text>" }`.
 
+Rate limits, per client IP: 20 new notes per 10 minutes, and 120 note requests per minute overall. Over the limit the API answers `429` with `rate_limited` and a `Retry-After` header in seconds. A refused read never uses a view.
+
+The API stores whatever string it is given. The website always sends encrypted text; API clients that want the same protection must encrypt before calling it, and `public/crypto.js` is the reference.
+
+## Encryption details
+
+- The browser generates a random 256-bit key when the page opens.
+- On submit it encrypts the note with AES-256-GCM, using a fresh random IV each time, and posts `base64url(iv + ciphertext + tag)` as `content`.
+- The key goes after the `#` in the share link. Browsers do not send the fragment in requests, so it never reaches the server, its logs or the database.
+- The recipient's browser fetches the ciphertext and decrypts it with the key from the link.
+
+What follows from that:
+
+- A lost link cannot be recovered: nobody else ever had the key.
+- The site needs JavaScript.
+- The page's own code does the encrypting, so users trust the server to deliver honest code. A strict Content-Security-Policy (`default-src 'self'`) rules out inline and third-party scripts.
+
 ## SEO
 
 - The home page is fully rendered HTML with a title, meta description, canonical URL, Open Graph and Twitter tags, and `WebApplication` structured data.
 - `robots.txt` and `sitemap.xml` list the home page only.
 - Every other page sends `X-Robots-Tag: noindex, nofollow` and `Cache-Control: no-store`, so note links never reach search results.
-- The social preview image is `public/og.png` (1200×630) and the logo is `public/favicon.svg`. Both are exported from the Figma file "Tiny Notes — Brand".
+- The social preview image is `public/og.png` (1200×630) and the logo is `public/favicon.svg`.
 
-## Notes on the implementation
+## Implementation notes
 
 - **Atomic reads**: one `UPDATE ... WHERE views_left > 0 AND expires_at > ? RETURNING`, plus the delete, in a single transaction (`src/notes.repo.ts`).
-- **Size limit**: a JSON request body is capped at 102,400 bytes, so the largest `content` over the API is slightly under 100 KB. Encryption and base64 add about a third, so the site limits a note to 75 KB of text.
+- **Storage**: one SQLite file in rollback-journal mode, so `notes.db` is the whole database. Expired rows are swept every 10 minutes.
+- **Size limit**: a JSON request body is capped at 102,400 bytes. Encryption and base64 add about a third, so the site limits a note to 75 KB of text.
+- **Rate limiting**: fixed-window counters per client IP, held in memory (`src/rate-limit.ts`). They reset on restart and are per process, so running several instances would need a shared store.
 - **Logs**: the request log records the route pattern, never the URL or body, so neither codes nor content are logged.
 - **Templates**: `src/views.ts` builds pages from template strings; every dynamic value is HTML-escaped.
+- **Design**: the logo, preview image and page designs live in the Figma file "Tiny Notes — Brand".

@@ -260,3 +260,45 @@ describe('unknown routes', () => {
     expect(res.body).toEqual({ error: 'not_found', message: expect.any(String) });
   });
 });
+
+describe('rate limiting', () => {
+  const limited = (limits: Parameters<typeof createApp>[0]['limits']) =>
+    createApp({ db, now: () => clock, log: () => {}, limits });
+
+  it('caps note creation per client, then allows it again after the window', async () => {
+    const strict = limited({ create: { limit: 2, windowSeconds: 600 } });
+    const post = () => request(strict).post('/notes').send({ content: 'x' });
+
+    expect((await post()).status).toBe(201);
+    expect((await post()).status).toBe(201);
+
+    const refused = await post();
+    expect(refused.status).toBe(429);
+    expect(refused.body.error).toBe('rate_limited');
+    expect(refused.headers['retry-after']).toBe('600');
+    expect(rowCount()).toBe(2); // the refused note was not stored
+
+    clock = START + 600;
+    expect((await post()).status).toBe(201);
+  });
+
+  it('never uses a view when a read is refused', async () => {
+    const strict = limited({ requests: { limit: 2, windowSeconds: 60 } });
+    const { code } = (await request(strict).post('/notes').send({ content: 'still here' })).body;
+    await request(strict).get(`/notes/${code}/meta`);
+
+    expect((await request(strict).get(`/notes/${code}`)).status).toBe(429);
+    expect(rowCount()).toBe(1);
+
+    clock = START + 60;
+    expect((await request(strict).get(`/notes/${code}`)).body.content).toBe('still here');
+  });
+
+  it('leaves the home page and static files alone', async () => {
+    const strict = limited({ requests: { limit: 1, windowSeconds: 60 } });
+    for (let i = 0; i < 5; i++) {
+      expect((await request(strict).get('/')).status).toBe(200);
+      expect((await request(strict).get('/styles.css')).status).toBe(200);
+    }
+  });
+});
