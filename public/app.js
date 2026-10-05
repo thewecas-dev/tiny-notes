@@ -187,6 +187,32 @@ if (waiting) {
   });
 }
 
+// ---- Expand the card to fill the window, for reading or writing a long note ----
+const expand = $('#expand');
+if (expand) {
+  expand.hidden = false;
+  // The class is on <html> and remembered for the tab, so switching between Write and Open
+  // (a page load) keeps the view expanded. /expanded.js re-applies it before first paint.
+  const root = document.documentElement;
+  const setExpanded = (on) => {
+    root.classList.toggle('expanded', on);
+    try {
+      if (on) sessionStorage.setItem('expanded', '1');
+      else sessionStorage.removeItem('expanded');
+    } catch {
+      // Storage blocked: expanding still works, it just will not survive a page change.
+    }
+    expand.setAttribute('aria-pressed', String(on));
+    expand.title = on ? 'Collapse' : 'Expand';
+    expand.setAttribute('aria-label', expand.title);
+  };
+  setExpanded(root.classList.contains('expanded'));
+  expand.addEventListener('click', () => setExpanded(!root.classList.contains('expanded')));
+  addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') setExpanded(false);
+  });
+}
+
 // ---- Find a note from a pasted link. Handled here so the key is never sent anywhere. ----
 $('#lookup')?.addEventListener('submit', (event) => {
   event.preventDefault();

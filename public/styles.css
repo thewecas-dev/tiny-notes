@@ -267,6 +267,7 @@ h1 {
 }
 
 .card {
+  container: card / inline-size;
   padding: var(--pad);
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -348,8 +349,194 @@ h1 {
   background: var(--well);
 }
 
-.tabs {
+.card-head {
+  display: flex;
+  gap: 0.5rem;
   margin-bottom: var(--pad);
+}
+
+.card-head .tabs {
+  flex: 1;
+}
+
+.expand {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 3.1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: var(--well);
+  color: var(--muted);
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.expand:hover {
+  border-color: var(--jade);
+  color: var(--ink);
+}
+
+.expand svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.expand .icon-collapse,
+.expanded .expand .icon-expand {
+  display: none;
+}
+
+.expanded .expand .icon-collapse {
+  display: block;
+}
+
+/* Expanded: the card takes the whole window under the header, which keeps the logo in view. */
+
+.expanded body {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.expanded .intro,
+.expanded .section,
+.expanded .footer {
+  display: none;
+}
+
+.expanded main {
+  flex: 1;
+  display: flex;
+  width: calc(100% - 2 * var(--gutter));
+  min-height: 0;
+}
+
+.expanded .hero {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  min-height: 0;
+  padding-block: var(--gap);
+}
+
+.expanded .card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Cards without a main pane (find a note, link ready, gone) stay a readable width. */
+.expanded .card > form:not(.split),
+.expanded .card > .result:not(.split) {
+  width: min(100%, 40rem);
+  margin-inline: auto;
+}
+
+/* Cards with one (write, open) lay out as panes: Figma "Expanded / ..." frames. */
+.expanded .split {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  min-height: 0;
+}
+
+.expanded .pane-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 14rem;
+}
+
+.expanded .pane-main .field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.expanded textarea.input {
+  flex: 1;
+  padding: 1.1rem 1.25rem;
+  resize: none;
+}
+
+.expanded .note-content {
+  flex: 1 1 0;
+  max-height: none;
+  padding: 1.25rem 1.4rem;
+}
+
+.note-stage {
+  flex: 1;
+  align-self: stretch;
+  display: grid;
+  place-content: center;
+  gap: 0.4rem;
+  padding: var(--pad);
+  border: 1.5px dashed var(--line);
+  border-radius: var(--radius-s);
+  background: var(--well);
+  text-align: center;
+}
+
+.note-stage h3 {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.note-stage p {
+  max-width: 34ch;
+  color: var(--muted);
+}
+
+/* With room to spare, settings and the main button move into a side panel. */
+@container card (min-width: 46rem) {
+  .expanded .split {
+    display: grid;
+    grid-template: 'main top' auto 'main bottom' 1fr / minmax(0, 1fr) clamp(17rem, 30%, 25rem);
+    gap: 0 var(--gap);
+  }
+
+  .expanded .pane-main {
+    grid-area: main;
+  }
+
+  .expanded .pane-top,
+  .expanded .pane-bottom {
+    padding: var(--pad);
+    border: 1px solid var(--line);
+    background: var(--well);
+  }
+
+  .expanded .pane-top {
+    grid-area: top;
+    padding-bottom: 0;
+    border-bottom: 0;
+    border-radius: var(--radius-s) var(--radius-s) 0 0;
+  }
+
+  .expanded .pane-bottom {
+    grid-area: bottom;
+    justify-content: flex-end;
+    border-top: 0;
+    border-radius: 0 0 var(--radius-s) var(--radius-s);
+  }
+
+  /* Controls sit on the panel's tint, so they take the lighter surface. */
+  .expanded .pane-top :is(.segmented, .stats > div, .stepper button, .stepper input, .input) {
+    background: var(--surface);
+  }
+
+  .expanded .pane-top .segmented input:checked + span {
+    background: var(--well);
+  }
 }
 
 .tabs a,
@@ -569,11 +756,11 @@ progress::-moz-progress-bar {
   color: var(--muted);
 }
 
-form > .hint {
+#expiry-readout {
   margin-bottom: 1rem;
 }
 
-form > .btn + .hint {
+.btn + .hint {
   margin: 0.9rem 0 0;
 }
 
@@ -643,11 +830,31 @@ form > .btn + .hint {
 
 /* Result states */
 
-.result {
+.result,
+.result > [class^='pane-'],
+.pane-bottom {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.9rem;
+}
+
+.result > [class^='pane-'],
+.pane-bottom > * {
+  align-self: stretch;
+}
+
+.pane-bottom > .alert {
+  margin: 0;
+}
+
+/* The locked-note placeholder only has a place in the expanded layout. */
+.stage-only {
+  display: none !important;
+}
+
+.expanded .stage-only {
+  display: flex !important;
 }
 
 .result h2 {
@@ -657,9 +864,9 @@ form > .btn + .hint {
   letter-spacing: -0.02em;
 }
 
-.result > .btn-block,
-.result > .btn-ghost,
-.result > .alert,
+.result .btn-block,
+.result .btn-ghost,
+.result .alert,
 .stats,
 .link,
 .note-content {

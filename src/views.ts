@@ -70,7 +70,7 @@ const FACTS = [
   ['Gone is gone', 'A viewed or expired note cannot be recovered by anyone. A used, expired or mistyped link all look the same.'],
   ['Lose the link, lose the note', 'The key exists only in your link. We cannot look a note up for you or reset anything, because we never had the key.'],
   ['Limits', 'Plain text up to 75 KB, 1 to 100 views, and a lifetime from 1 minute to 7 days.'],
-  ['What you are trusting', 'The code on this page does the encrypting. It is small, loads no third-party scripts, and you can read it at /app.js and /crypto.js.'],
+  ['Share the link privately', 'Anyone who has the complete link can open the note. Send it through a channel you trust, and prefer one view when a single person needs it.'],
 ] as const;
 
 export interface PageOptions {
@@ -128,6 +128,7 @@ export function page({ card, aside = '', tab, title, canonical }: PageOptions, o
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="/fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/styles.css">
+  <script src="/expanded.js"></script>
   <script type="module" src="/app.js"></script>
 </head>
 <body>
@@ -153,10 +154,16 @@ export function page({ card, aside = '', tab, title, canonical }: PageOptions, o
     </div>
 
     <section class="card" aria-label="Notes">
-      <nav class="tabs" aria-label="Choose an action">
-        <a href="/"${current('write')}>Write a note</a>
-        <a href="/open"${current('open')}>Open a note</a>
-      </nav>
+      <div class="card-head">
+        <nav class="tabs" aria-label="Choose an action">
+          <a href="/"${current('write')}>Write a note</a>
+          <a href="/open"${current('open')}>Open a note</a>
+        </nav>
+        <button type="button" class="expand" id="expand" aria-pressed="false" aria-label="Expand" title="Expand" hidden>
+          <svg class="icon-expand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+          <svg class="icon-collapse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg>
+        </button>
+      </div>
       ${card}
       <noscript><p class="alert">Notes are encrypted in your browser, so this page needs JavaScript turned on.</p></noscript>
     </section>
@@ -250,7 +257,8 @@ const EXPIRY_PRESETS = [
 
 /** The form is submitted by public/app.js, which encrypts the note first. */
 export function createFormCard(): string {
-  return `<form id="create" novalidate>
+  return `<form id="create" class="split" novalidate>
+        <div class="pane-main">
         <div class="field">
           <div class="field-head">
             <label for="content">Your note</label>
@@ -259,7 +267,9 @@ export function createFormCard(): string {
           <textarea id="content" class="input mono" rows="6" placeholder="Paste a password, API key or one-off message…" autocomplete="off" spellcheck="false"></textarea>
           <progress id="size-bar" max="75000" value="0" aria-hidden="true"></progress>
         </div>
+        </div>
 
+        <div class="pane-top">
           <div class="field">
             <label for="max-views">Can be opened</label>
             <div class="stepper">
@@ -287,8 +297,12 @@ export function createFormCard(): string {
           </fieldset>
 
         <p class="hint" id="expiry-readout" aria-live="polite"></p>
-        <p class="alert" id="create-error" role="alert" hidden></p>
-        <button type="submit" class="btn btn-primary btn-block">Create secret link</button>
+        </div>
+
+        <div class="pane-bottom">
+          <p class="alert" id="create-error" role="alert" hidden></p>
+          <button type="submit" class="btn btn-primary btn-block">Create secret link</button>
+        </div>
       </form>`;
 }
 
@@ -344,24 +358,41 @@ const goneBody = `<p class="badge badge-muted">Gone</p>
         <a class="btn btn-ghost" href="/">Write a note</a>`;
 
 export function waitingCard(code: string, viewsLeft: number, expiresAt: number, secondsLeft: number): string {
-  return `<div class="result" id="waiting" data-code="${esc(code)}">
-        <p class="badge">Note waiting</p>
-        <h2>Someone sent you a note</h2>
-        <dl class="stats">
-          <div><dt>Views</dt><dd>${plural(viewsLeft, 'view')} left</dd></div>
-          <div><dt>Expires in</dt><dd data-expires="${expiresAt}">${formatRemaining(secondsLeft)}</dd></div>
-        </dl>
-        <p class="hint">Revealing uses one view and cannot be undone. The note is unlocked here, in your browser.</p>
-        <p class="alert" id="reveal-error" role="alert" hidden></p>
-        <button type="button" class="btn btn-primary btn-block" id="reveal">Reveal note</button>
-        <a class="btn btn-ghost" href="/">Not now</a>
+  return `<div class="result split" id="waiting" data-code="${esc(code)}">
+        <div class="pane-top">
+          <p class="badge">Note waiting</p>
+          <h2>Someone sent you a note</h2>
+          <dl class="stats">
+            <div><dt>Views</dt><dd>${plural(viewsLeft, 'view')} left</dd></div>
+            <div><dt>Expires in</dt><dd data-expires="${expiresAt}">${formatRemaining(secondsLeft)}</dd></div>
+          </dl>
+          <p class="hint">Revealing uses one view and cannot be undone. The note is unlocked here, in your browser.</p>
+        </div>
+        <div class="pane-main stage-only">
+          <div class="note-stage">
+            <h3>This note is still locked</h3>
+            <p>Press Reveal note and it is unlocked here, in your browser.</p>
+          </div>
+        </div>
+        <div class="pane-bottom">
+          <p class="alert" id="reveal-error" role="alert" hidden></p>
+          <button type="button" class="btn btn-primary btn-block" id="reveal">Reveal note</button>
+          <a class="btn btn-ghost" href="/">Not now</a>
+        </div>
       </div>
       <template id="revealed-template">
-        <p class="badge badge-success">Revealed</p>
-        <pre id="note" class="note-content" tabindex="0"></pre>
-        <p class="hint" id="revealed-summary"></p>
-        <button type="button" class="btn btn-primary btn-block" data-copy="#note">Copy note</button>
-        <a class="btn btn-ghost" href="/">Done</a>
+        <div class="pane-top">
+          <p class="badge badge-success">Revealed</p>
+          <h2>Here is your note</h2>
+          <p class="hint" id="revealed-summary"></p>
+        </div>
+        <div class="pane-main">
+          <pre id="note" class="note-content" tabindex="0"></pre>
+        </div>
+        <div class="pane-bottom">
+          <button type="button" class="btn btn-primary btn-block" data-copy="#note">Copy note</button>
+          <a class="btn btn-ghost" href="/">Done</a>
+        </div>
       </template>
       <template id="gone-template">
         ${goneBody}
