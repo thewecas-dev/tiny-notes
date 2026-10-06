@@ -14,7 +14,7 @@ Tiny Notes is a small web app for sending something you don't want lying around 
 
 The note is encrypted in your browser before it is sent. The server stores only locked text it has no key for, so nobody on the server side can read a note: not the app, not its operators, not someone holding a copy of the database.
 
-There are no accounts and nothing to install. It runs as one Node process, storing notes in a Turso database or, for local development, a single SQLite file.
+There are no accounts and nothing to install. It runs as one Node process. Notes are stored in [Turso](https://app.turso.tech/), a hosted SQLite database.
 
 ## How it works
 
@@ -76,6 +76,15 @@ npm run build && npm start
 | `SITE_URL` | request host | Public origin without a trailing slash, e.g. `https://notes.example.com`. **Set this in production**: canonical URLs, share links, the preview image URL and the sitemap use it |
 
 The site needs HTTPS in production (or `localhost` in development), because browsers only allow encryption on secure pages.
+
+## Database
+
+The app uses **[Turso](https://app.turso.tech/)**, a hosted SQLite-compatible database, through the `@libsql/client` driver.
+
+- **Setup:** create a database at [app.turso.tech](https://app.turso.tech/), copy its URL (`libsql://...`) and create an auth token, then set them as `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`.
+- **Tables:** `notes` holds the live, encrypted notes. `note_stats` and `counters` hold the anonymous numbers behind the analytics page. All three, and the triggers that keep the stats up to date, are created automatically the first time the app starts.
+- **Local development without Turso:** leave `TURSO_DATABASE_URL` empty and the app writes to a local SQLite file (`data/notes.db`, or the path in `NOTES_DB`). The same SQL runs on both, and the tests use an in-memory database.
+- **Hosting note:** because the data lives in Turso, the app server needs no disk of its own. Put the server in a region close to the database to keep requests fast.
 
 ## Project layout
 
