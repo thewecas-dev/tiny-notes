@@ -77,6 +77,12 @@ npm run build && npm start
 
 The site needs HTTPS in production (or `localhost` in development), because browsers only allow encryption on secure pages.
 
+## Hosting
+
+- **App:** runs on [Render](https://render.com/) at https://tinynotes-emfx.onrender.com.
+- **Keeping it awake:** Render's free instances go to sleep when idle, which makes the next visitor wait for a cold start. [UptimeRobot](https://uptimerobot.com/) sends a request to the site every 5 minutes to keep the server running. The check hits the home page, which is not rate limited and does not touch the database.
+- **Landing page:** the static page in `docs/` is published to GitHub Pages by `.github/workflows/pages.yml` whenever `docs/` changes on `main`. It links to the app and loads even when the app is asleep.
+
 ## Database
 
 The app uses **[Turso](https://app.turso.tech/)**, a hosted SQLite-compatible database, through the `@libsql/client` driver.
@@ -101,6 +107,7 @@ One Node + Express process serves both the JSON API and the web pages. Pages are
 | `public/app.js` | Page behaviour: encrypts and sends a note, fetches and decrypts one, live readouts |
 | `public/` (rest) | Stylesheet, fonts, logo and preview image |
 | `test/` | API and page tests |
+| `docs/` | Static landing page for GitHub Pages |
 | `req.md` | The original requirement for the API |
 
 ## Pages

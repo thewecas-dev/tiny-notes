@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!--
+    Static landing page for GitHub Pages (Settings > Pages > Branch: main, folder: /docs).
+    It sends people to the app. If either address changes, replace it everywhere in this file:
+      the app:   https://tinynotes-emfx.onrender.com
+      this page: https://thewecas-dev.github.io/tiny-notes/
+  -->
+  <title>Tiny Notes: send a secret note that deletes itself</title>
+  <meta name="description" content="Free tool to share a password, API key or private message through an end-to-end encrypted link that self-destructs after it is read. No sign-up.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f5f6f3" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f1312" media="(prefers-color-scheme: dark)">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <link rel="canonical" href="https://thewecas-dev.github.io/tiny-notes/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Tiny Notes">
+  <meta property="og:title" content="Tiny Notes: send a secret note that deletes itself">
+  <meta property="og:description" content="Share a password, API key or private message through an end-to-end encrypted link that self-destructs after it is read. Free, no sign-up.">
+  <meta property="og:url" content="https://thewecas-dev.github.io/tiny-notes/">
+  <meta property="og:image" content="https://thewecas-dev.github.io/tiny-notes/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Tiny Notes: share it once, then it is gone.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://thewecas-dev.github.io/tiny-notes/og.png">
+
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preconnect" href="https://tinynotes-emfx.onrender.com">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "name": "Tiny Notes",
+        "url": "https://tinynotes-emfx.onrender.com/",
+        "description": "Share a password, API key or private message through an end-to-end encrypted link that deletes itself after it is read.",
+        "applicationCategory": "SecurityApplication",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires JavaScript",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "featureList": [
+          "End-to-end encryption in the browser",
+          "Notes delete themselves after 1 to 100 views",
+          "Expiry from 1 minute to 7 days",
+          "No account needed"
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Can Tiny Notes read my note?",
+            "acceptedAnswer": { "@type": "Answer", "text": "No. Your browser encrypts the note before it is sent, and the key stays in the link you share. The server only ever stores locked text it has no key for." }
+          },
+          {
+            "@type": "Question",
+            "name": "What happens after the note is read?",
+            "acceptedAnswer": { "@type": "Answer", "text": "It is deleted from the server as soon as its last allowed view is used, or when its timer runs out, whichever comes first. It cannot be recovered." }
+          },
+          {
+            "@type": "Question",
+            "name": "Do I need an account?",
+            "acceptedAnswer": { "@type": "Answer", "text": "No. There is nothing to sign up for or install, and it is free." }
+          },
+          {
+            "@type": "Question",
+            "name": "Will a link preview in a chat app use up my note?",
+            "acceptedAnswer": { "@type": "Answer", "text": "No. Opening the link only shows how many views are left. The note is used only when the reader presses Reveal note." }
+          },
+          {
+            "@type": "Question",
+            "name": "How much text can I send?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Up to 75 KB of plain text per note, which can be opened 1 to 100 times and can last from 1 minute to 7 days." }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <style>
+    @font-face {
+      font-family: 'Bricolage Grotesque';
+      src: url('bricolage-grotesque.woff2') format('woff2');
+      font-weight: 200 800;
+      font-display: swap;
+    }
+
+    :root {
+      --bg: #f5f6f3; --surface: #ffffff; --line: #dde2dc; --ink: #14201b; --muted: #56635d;
+      --jade: #17805e; --jade-press: #0e5c43; --on-jade: #ffffff; --yuzu: #dfea6a; --on-yuzu: #1d2a05;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1312; --surface: #171c1a; --line: #29302d; --ink: #eef2ef; --muted: #9aa6a0;
+        --jade: #3fcf9e; --jade-press: #34b98c; --on-jade: #062a1e;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 1.0625rem/1.55 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3, p, ol, ul { margin: 0; padding: 0; }
+    ol, ul { list-style: none; }
+    a { color: inherit; }
+    :focus-visible { outline: 2px solid var(--jade); outline-offset: 3px; }
+
+    .wrap { width: min(100% - 2 * clamp(1rem, 4vw, 2.5rem), 62rem); margin-inline: auto; }
+    header { border-bottom: 1px solid var(--line); }
+    .bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1.5rem; padding-block: 0.85rem; }
+    .brand { display: inline-flex; align-items: center; gap: 0.6rem; font-size: 1.2rem; font-weight: 600; letter-spacing: -0.02em; text-decoration: none; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 0.85rem 1.5rem; border-radius: 0.85rem;
+      background: var(--jade); color: var(--on-jade);
+      font-weight: 600; text-decoration: none; white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: var(--jade-press); }
+    .btn-small { padding: 0.55rem 1rem; }
+
+    .hero { padding-block: clamp(3rem, 9vw, 6.5rem) clamp(2.5rem, 7vw, 5rem); }
+    h1 { max-width: 14ch; font-size: clamp(2.5rem, 1.3rem + 5.6vw, 5rem); font-weight: 600; line-height: 0.98; letter-spacing: -0.04em; }
+    .lede { max-width: 54ch; margin-block: clamp(1.1rem, 2.5vw, 1.75rem) clamp(1.5rem, 3vw, 2.25rem); font-size: clamp(1.1rem, 1rem + 0.5vw, 1.3rem); color: var(--muted); }
+    .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.5rem; }
+    .cta span { font-size: 0.95rem; color: var(--muted); }
+
+    section { padding-block: clamp(2.5rem, 6vw, 4.5rem); border-top: 1px solid var(--line); }
+    h2 { margin-bottom: clamp(1.25rem, 3vw, 2rem); font-size: clamp(1.75rem, 1.3rem + 2vw, 2.5rem); font-weight: 600; line-height: 1.05; letter-spacing: -0.03em; }
+    h3 { margin-bottom: 0.35rem; font-size: 1.2rem; font-weight: 600; letter-spacing: -0.01em; }
+    .muted, li p, details p { color: var(--muted); }
+
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: clamp(1.25rem, 3vw, 2.25rem); counter-reset: step; }
+    .steps li { padding: 1.4rem; border: 1px solid var(--line); border-radius: 1.1rem; background: var(--surface); counter-increment: step; }
+    .steps li::before { content: counter(step); display: block; margin-bottom: 0.6rem; color: var(--jade); font-size: 1.5rem; font-weight: 600; line-height: 1; }
+
+    .points { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 0 clamp(1.5rem, 4vw, 3rem); }
+    .points li { padding-block: 1.2rem; border-top: 1px solid var(--line); }
+    .key { padding: 0.05em 0.4em; border-radius: 0.35em; background: var(--yuzu); color: var(--on-yuzu); font-weight: 600; }
+
+    details { border-top: 1px solid var(--line); }
+    details:last-of-type { border-bottom: 1px solid var(--line); }
+    summary { padding-block: 1.1rem; font-size: 1.15rem; font-weight: 600; cursor: pointer; }
+    details p { max-width: 62ch; padding-bottom: 1.2rem; }
+
+    .closing { text-align: center; }
+    .closing h2 { margin-bottom: 0.75rem; }
+    .closing p { margin-bottom: 1.75rem; }
+
+    footer { padding-block: 1.75rem 2.5rem; border-top: 1px solid var(--line); font-size: 0.9rem; color: var(--muted); }
+
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap bar">
+      <a class="brand" href="https://tinynotes-emfx.onrender.com/">
+        <img src="favicon.svg" width="30" height="30" alt="">tiny notes
+      </a>
+      <a class="btn btn-small" href="https://tinynotes-emfx.onrender.com/">Open Tiny Notes</a>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="hero">
+      <h1>Send a secret that deletes itself</h1>
+      <p class="lede">
+        Tiny Notes turns a password, API key or private message into a one-time link.
+        The note is encrypted in your browser, and it is erased as soon as it has been read
+        or its timer runs out.
+      </p>
+      <div class="cta">
+        <a class="btn" href="https://tinynotes-emfx.onrender.com/">Write a secret note</a>
+        <span>Free. No sign-up. Nothing to install.</span>
+      </div>
+    </div>
+
+    <section aria-labelledby="how">
+      <h2 id="how">How it works</h2>
+      <ol class="steps">
+        <li>
+          <h3>Write your note</h3>
+          <p>Paste the text, then pick how many times it can be opened and how long it should last.</p>
+        </li>
+        <li>
+          <h3>Share the link</h3>
+          <p>You get a short link. Send it through chat or email to the one person who needs it.</p>
+        </li>
+        <li>
+          <h3>It is gone after reading</h3>
+          <p>Once the last view is used or the time is up, the note is deleted and the link stops working.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section aria-labelledby="why">
+      <h2 id="why">Private by design</h2>
+      <ul class="points">
+        <li>
+          <h3>End-to-end encrypted</h3>
+          <p>Your browser locks the note with AES-256 before it leaves your device. Only the locked text is stored.</p>
+        </li>
+        <li>
+          <h3>The key never reaches the server</h3>
+          <p><span class="key">The key</span> travels inside your link, in the part browsers never send. Without the link, the note cannot be opened by anyone, including us.</p>
+        </li>
+        <li>
+          <h3>One view means one reader</h3>
+          <p>A one-view note goes to exactly one person. If someone else got there first, your recipient sees that it is gone.</p>
+        </li>
+        <li>
+          <h3>Safe from link previews</h3>
+          <p>Opening the link only shows its status. The note is used when the reader presses Reveal, not before.</p>
+        </li>
+        <li>
+          <h3>No accounts, no profiles</h3>
+          <p>There is nothing to sign up for and nothing that identifies who wrote or read a note.</p>
+        </li>
+        <li>
+          <h3>You set the limits</h3>
+          <p>1 to 100 views, and a lifetime from 1 minute to 7 days. Up to 75 KB of plain text per note.</p>
+        </li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="uses">
+      <h2 id="uses">What people send</h2>
+      <ul class="points">
+        <li>
+          <h3>Passwords and logins</h3>
+          <p>Hand over a Wi-Fi password or a shared account without leaving it in chat history.</p>
+        </li>
+        <li>
+          <h3>API keys and tokens</h3>
+          <p>Pass a credential to a teammate once, instead of pasting it into email or a ticket.</p>
+        </li>
+        <li>
+          <h3>Recovery codes and PINs</h3>
+          <p>Send a one-time code that should not be sitting in an inbox next week.</p>
+        </li>
+        <li>
+          <h3>Private messages</h3>
+          <p>Anything meant to be read once and then forgotten.</p>
+        </li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="faq">
+      <h2 id="faq">Questions</h2>
+      <details>
+        <summary>Can Tiny Notes read my note?</summary>
+        <p>No. Your browser encrypts the note before it is sent, and the key stays in the link you share. The server only ever stores locked text it has no key for.</p>
+      </details>
+      <details>
+        <summary>What happens after the note is read?</summary>
+        <p>It is deleted from the server as soon as its last allowed view is used, or when its timer runs out, whichever comes first. It cannot be recovered.</p>
+      </details>
+      <details>
+        <summary>Do I need an account?</summary>
+        <p>No. There is nothing to sign up for or install, and it is free.</p>
+      </details>
+      <details>
+        <summary>Will a link preview in a chat app use up my note?</summary>
+        <p>No. Opening the link only shows how many views are left. The note is used only when the reader presses Reveal note.</p>
+      </details>
+      <details>
+        <summary>How much text can I send?</summary>
+        <p>Up to 75 KB of plain text per note, which can be opened 1 to 100 times and can last from 1 minute to 7 days.</p>
+      </details>
+    </section>
+
+    <section class="closing" aria-labelledby="start">
+      <h2 id="start">Ready to send one?</h2>
+      <p class="muted">It takes a few seconds, and the first load of the app can take a little longer while it wakes up.</p>
+      <a class="btn" href="https://tinynotes-emfx.onrender.com/">Open Tiny Notes</a>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">Tiny Notes. End-to-end encrypted notes that delete themselves.</div>
+  </footer>
+</body>
+</html>

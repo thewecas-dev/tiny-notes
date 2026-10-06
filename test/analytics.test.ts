@@ -19,7 +19,8 @@ beforeEach(async () => {
 afterEach(() => db.close());
 
 const create = async (body: object) => (await request(app).post('/notes').send(body)).body.code as string;
-const stats = async () => (await db.execute('SELECT * FROM note_stats ORDER BY created_at, max_views')).rows;
+// Ordered by something the tests control. Creation time would flip when two notes straddle a second.
+const stats = async () => (await db.execute('SELECT * FROM note_stats ORDER BY max_views')).rows;
 
 describe('note stats', () => {
   it('follows a note from creation to its end without keeping its code or content', async () => {

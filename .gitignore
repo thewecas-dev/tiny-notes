@@ -1,7 +1,22 @@
+# Dependencies and build output
 node_modules/
 dist/
+coverage/
+
+# Local database files
 data/
-.angular/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Secrets and local settings (.env.example is the template that is committed)
+.env
+.env.*
+!.env.example
+
+# Logs and OS/editor clutter
 *.log
 .DS_Store
-.env
+.idea/
+.vscode/
