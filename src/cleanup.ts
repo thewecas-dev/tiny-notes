@@ -8,7 +8,10 @@ export function startCleanup(
   now: () => number,
   intervalMs = CLEANUP_INTERVAL_MS,
 ): () => void {
-  const timer = setInterval(() => repo.deleteExpired(now()), intervalMs);
+  const timer = setInterval(() => {
+    // A failed sweep (say, the database is briefly unreachable) must not take the server down.
+    repo.deleteExpired(now()).catch((err) => console.error(`cleanup failed: ${err?.message}`));
+  }, intervalMs);
   timer.unref();
   return () => clearInterval(timer);
 }

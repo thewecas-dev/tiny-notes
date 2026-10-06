@@ -22,51 +22,64 @@ export interface NoteMeta {
 export type NotesRepo = ReturnType<typeof createNotesRepo>;
 
 export function createNotesRepo(db: Db) {
-  const insertStmt = db.prepare(
-    'INSERT INTO notes (code, content, views_left, expires_at, created_at) VALUES (?, ?, ?, ?, ?)',
-  );
-  const consumeStmt = db.prepare<[string, number], ConsumedNote>(
-    `UPDATE notes SET views_left = views_left - 1
-     WHERE code = ? AND views_left > 0 AND expires_at > ?
-     RETURNING content, views_left`,
-  );
-  const deleteStmt = db.prepare('DELETE FROM notes WHERE code = ?');
-  const metaStmt = db.prepare<[string, number], NoteMeta>(
-    `SELECT views_left, expires_at, created_at FROM notes
-     WHERE code = ? AND views_left > 0 AND expires_at > ?`,
-  );
-  const deleteExpiredStmt = db.prepare('DELETE FROM notes WHERE expires_at <= ?');
-
-  // Check, decrement and delete happen in one transaction so a note is never over-served.
-  const consumeTx = db.transaction((code: string, now: number) => {
-    const row = consumeStmt.get(code, now);
-    if (row && row.views_left === 0) deleteStmt.run(code);
-    return row;
-  });
-
   return {
-    /** Returns false when the code is already taken. */
-    insert(note: NewNote): boolean {
+    /** Resolves to false when the code is already taken. */
+    async insert(note: NewNote): Promise<boolean> {
       try {
-        insertStmt.run(note.code, note.content, note.viewsLeft, note.expiresAt, note.createdAt);
+        await db.execute({
+          sql: 'INSERT INTO notes (code, content, views_left, expires_at, created_at) VALUES (?, ?, ?, ?, ?)',
+          args: [note.code, note.content, note.viewsLeft, note.expiresAt, note.createdAt],
+        });
         return true;
       } catch (err) {
-        if ((err as { code?: string }).code === 'SQLITE_CONSTRAINT_PRIMARYKEY') return false;
+        // The primary key is the only constraint an insert can break.
+        if (String((err as { code?: string }).code).startsWith('SQLITE_CONSTRAINT')) return false;
         throw err;
       }
     },
 
-    consume(code: string, now: number): ConsumedNote | undefined {
-      return consumeTx(code, now);
+    /**
+     * Check, decrement and delete in one transaction, sent as a single round trip, so a
+     * note is never over-served. The UPDATE alone decides who gets the note; the DELETE
+     * only removes a row that has just reached zero.
+     */
+    async consume(code: string, now: number): Promise<ConsumedNote | undefined> {
+      const [updated] = await db.batch(
+        [
+          {
+            sql: `UPDATE notes SET views_left = views_left - 1
+                  WHERE code = ? AND views_left > 0 AND expires_at > ?
+                  RETURNING content, views_left`,
+            args: [code, now],
+          },
+          { sql: 'DELETE FROM notes WHERE code = ? AND views_left = 0', args: [code] },
+        ],
+        'write',
+      );
+      const row = updated?.rows[0];
+      return row && { content: String(row.content), views_left: Number(row.views_left) };
     },
 
-    meta(code: string, now: number): NoteMeta | undefined {
-      return metaStmt.get(code, now);
+    async meta(code: string, now: number): Promise<NoteMeta | undefined> {
+      const { rows } = await db.execute({
+        sql: `SELECT views_left, expires_at, created_at FROM notes
+              WHERE code = ? AND views_left > 0 AND expires_at > ?`,
+        args: [code, now],
+      });
+      const row = rows[0];
+      return (
+        row && {
+          views_left: Number(row.views_left),
+          expires_at: Number(row.expires_at),
+          created_at: Number(row.created_at),
+        }
+      );
     },
 
-    /** Returns the number of rows removed. */
-    deleteExpired(now: number): number {
-      return deleteExpiredStmt.run(now).changes;
+    /** Resolves to the number of rows removed. */
+    async deleteExpired(now: number): Promise<number> {
+      const result = await db.execute({ sql: 'DELETE FROM notes WHERE expires_at <= ?', args: [now] });
+      return result.rowsAffected;
     },
   };
 }

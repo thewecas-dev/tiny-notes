@@ -10,8 +10,8 @@ const SITE = 'https://notes.example.com';
 let db: Db;
 let app: ReturnType<typeof createApp>;
 
-beforeEach(() => {
-  db = openDb(':memory:');
+beforeEach(async () => {
+  db = await openDb(':memory:');
   app = createApp({ db, log: () => {}, siteUrl: SITE });
 });
 
@@ -84,7 +84,7 @@ describe('end-to-end encryption', () => {
     const code = await createNote(await encrypt(secret, key));
 
     // Everything the server holds, and every page it renders for this note.
-    const stored = JSON.stringify(db.prepare('SELECT * FROM notes').all());
+    const stored = JSON.stringify((await db.execute('SELECT * FROM notes')).rows);
     const pages = [
       (await request(app).get(`/n/${code}?created=1`)).text,
       (await request(app).get(`/n/${code}`)).text,

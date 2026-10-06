@@ -15,7 +15,7 @@ export interface NotesRouteDeps {
 }
 
 /** Stores a note under a fresh code. Shared by the JSON API and the HTML form. */
-export function createNote(
+export async function createNote(
   { repo, now, generateCode }: NotesRouteDeps,
   { content, maxViews, expiresIn }: CreateInput,
 ) {
@@ -23,7 +23,7 @@ export function createNote(
   const expiresAt = createdAt + expiresIn;
   for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt++) {
     const code = generateCode();
-    if (repo.insert({ code, content, viewsLeft: maxViews, expiresAt, createdAt })) {
+    if (await repo.insert({ code, content, viewsLeft: maxViews, expiresAt, createdAt })) {
       return { code, viewsLeft: maxViews, expiresAt };
     }
   }
@@ -33,21 +33,21 @@ export function createNote(
 export function registerNotesRoutes(app: Express, deps: NotesRouteDeps) {
   const { repo, now } = deps;
 
-  app.post('/notes', (req, res) => {
-    const note = createNote(deps, parseCreateBody(req.body));
+  app.post('/notes', async (req, res) => {
+    const note = await createNote(deps, parseCreateBody(req.body));
     res
       .status(201)
       .json({ code: note.code, views_left: note.viewsLeft, expires_at: toIso(note.expiresAt) });
   });
 
-  app.get('/notes/:code', (req, res) => {
-    const note = repo.consume(req.params.code, now());
+  app.get('/notes/:code', async (req, res) => {
+    const note = await repo.consume(req.params.code, now());
     if (!note) throw notFound();
     res.json({ content: note.content, views_left: note.views_left });
   });
 
-  app.get('/notes/:code/meta', (req, res) => {
-    const meta = repo.meta(req.params.code, now());
+  app.get('/notes/:code/meta', async (req, res) => {
+    const meta = await repo.meta(req.params.code, now());
     if (!meta) throw notFound();
     res.json({
       views_left: meta.views_left,

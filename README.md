@@ -14,7 +14,7 @@ Tiny Notes is a small web app for sending something you don't want lying around 
 
 The note is encrypted in your browser before it is sent. The server stores only locked text it has no key for, so nobody on the server side can read a note: not the app, not its operators, not someone holding a copy of the database.
 
-There are no accounts and nothing to install. It runs as one Node process with one SQLite file.
+There are no accounts and nothing to install. It runs as one Node process, storing notes in a Turso database or, for local development, a single SQLite file.
 
 ## How it works
 
@@ -59,6 +59,7 @@ Limits: plain text up to 75 KB on the site, 1 to 100 views, 1 minute to 7 days.
 
 ```sh
 npm install
+cp .env.example .env   # optional: fill in Turso values, or leave empty for a local file
 npm run dev      # http://localhost:3000, restarts on change
 npm test
 npm run build && npm start
@@ -67,8 +68,11 @@ npm run build && npm start
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `PORT` | `3000` | Port to listen on |
-| `NOTES_DB` | `data/notes.db` | SQLite file |
+| `TURSO_DATABASE_URL` | none | Turso database address (`libsql://...`). When set, notes are stored in Turso |
+| `TURSO_AUTH_TOKEN` | none | Token for that database. Keep it out of git |
+| `NOTES_DB` | `data/notes.db` | Local SQLite file, used only when `TURSO_DATABASE_URL` is not set |
 | `TRUST_PROXY` | `0` | Number of reverse proxies in front of the app (`1` behind nginx or a platform load balancer). **Set this in production**, or every visitor shares one rate limit |
+| `ANALYTICS_PASSWORD` | none | Password for the analytics page. When unset, `/analytics` does not exist |
 | `SITE_URL` | request host | Public origin without a trailing slash, e.g. `https://notes.example.com`. **Set this in production**: canonical URLs, share links, the preview image URL and the sitemap use it |
 
 The site needs HTTPS in production (or `localhost` in development), because browsers only allow encryption on secure pages.
@@ -80,8 +84,10 @@ One Node + Express process serves both the JSON API and the web pages. Pages are
 | Path | What |
 | --- | --- |
 | `src/server.ts`, `src/app.ts` | Entry point and Express app factory |
-| `src/notes.routes.ts`, `src/notes.repo.ts` | JSON API and the SQLite queries (`better-sqlite3`) |
+| `src/notes.routes.ts`, `src/notes.repo.ts` | JSON API and the database queries |
+| `src/db.ts` | Opens the database (Turso or a local file) through `@libsql/client` |
 | `src/pages.routes.ts`, `src/views.ts` | HTML pages, `robots.txt`, `sitemap.xml` |
+| `src/analytics.ts`, `src/analytics.view.ts` | Analytics queries and the dashboard page |
 | `public/crypto.js` | The encryption: AES-256-GCM via the browser's Web Crypto |
 | `public/app.js` | Page behaviour: encrypts and sends a note, fetches and decrypts one, live readouts |
 | `public/` (rest) | Stylesheet, fonts, logo and preview image |
@@ -97,6 +103,14 @@ One Node + Express process serves both the JSON API and the web pages. Pages are
 | `GET /n/{code}` | Note status. Never uses a view | No |
 
 Creating and revealing go through the JSON API from `public/app.js`.
+
+## Analytics
+
+`/analytics` is an unlisted dashboard: nothing links to it, it is not in the sitemap or `robots.txt`, and it is never indexed or cached. It opens with a password form; the password is `ANALYTICS_PASSWORD`. The numbers are read from the database only after the password is checked, and attempts are limited to ten per client per 10 minutes. Without `ANALYTICS_PASSWORD` the page does not exist. A client that sends `Accept: application/json` with the password gets the same numbers as JSON.
+
+It shows how many notes are created and when, how they end (read or expired unread), how long recipients take to open them, note sizes, and which expiry and view limits people choose, each with smallest, median, average and largest.
+
+What is stored, in the `note_stats` and `counters` tables: per note, its creation time, estimated text size, chosen view limit and expiry, views used, link opens, first and last reveal times, and how it ended. No content, keys, IP addresses or other visitor details. When a note is gone, its code in the analytics row is replaced with a random value, so the numbers cannot be tied back to a link. The rows are kept up to date by database triggers, inside the same transaction as the note itself.
 
 ## API
 
@@ -134,8 +148,8 @@ What follows from that:
 
 ## Implementation notes
 
-- **Atomic reads**: one `UPDATE ... WHERE views_left > 0 AND expires_at > ? RETURNING`, plus the delete, in a single transaction (`src/notes.repo.ts`).
-- **Storage**: one SQLite file in rollback-journal mode, so `notes.db` is the whole database. Expired rows are swept every 10 minutes.
+- **Atomic reads**: one `UPDATE ... WHERE views_left > 0 AND expires_at > ? RETURNING`, plus the delete, sent as a single transaction in one round trip (`src/notes.repo.ts`).
+- **Storage**: Turso (hosted SQLite) in production, a local SQLite file otherwise; the same SQL runs on both. Expired rows are swept every 10 minutes.
 - **Size limit**: a JSON request body is capped at 102,400 bytes. Encryption and base64 add about a third, so the site limits a note to 75 KB of text.
 - **Rate limiting**: fixed-window counters per client IP, held in memory (`src/rate-limit.ts`). They reset on restart and are per process, so running several instances would need a shared store.
 - **Logs**: the request log records the route pattern, never the URL or body, so neither codes nor content are logged.

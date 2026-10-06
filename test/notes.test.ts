@@ -13,8 +13,8 @@ let clock: number;
 let logs: string[];
 let app: ReturnType<typeof createApp>;
 
-beforeEach(() => {
-  db = openDb(':memory:');
+beforeEach(async () => {
+  db = await openDb(':memory:');
   clock = START;
   logs = [];
   app = createApp({ db, now: () => clock, log: (line) => logs.push(line) });
@@ -27,7 +27,7 @@ afterEach(() => {
 });
 
 const create = (body: object) => request(app).post('/notes').send(body);
-const rowCount = () => (db.prepare('SELECT COUNT(*) AS n FROM notes').get() as { n: number }).n;
+const rowCount = async () => Number((await db.execute('SELECT COUNT(*) AS n FROM notes')).rows[0]!.n);
 
 /** A JSON body of exactly `bytes` bytes. */
 function bodyOfSize(bytes: number): string {
@@ -125,7 +125,7 @@ describe('GET /notes/:code', () => {
     const first = await request(app).get(`/notes/${code}`);
     expect(first.status).toBe(200);
     expect(first.body).toEqual({ content: 'only once', views_left: 0 });
-    expect(rowCount()).toBe(0); // deleted in the same operation
+    expect(await rowCount()).toBe(0); // deleted in the same operation
 
     const second = await request(app).get(`/notes/${code}`);
     expect(second.status).toBe(404);
@@ -150,7 +150,7 @@ describe('GET /notes/:code', () => {
     expect((await request(app).get(`/notes/${code}`)).status).toBe(200);
 
     clock = START + 61;
-    expect(rowCount()).toBe(1); // still in the database
+    expect(await rowCount()).toBe(1); // still in the database
     expect((await request(app).get(`/notes/${code}`)).status).toBe(404);
     expect((await request(app).get(`/notes/${code}/meta`)).status).toBe(404);
   });
@@ -215,8 +215,8 @@ describe('cleanup', () => {
     const repo = createNotesRepo(db);
 
     clock = START + 61;
-    expect(repo.deleteExpired(clock)).toBe(1);
-    expect(rowCount()).toBe(1);
+    expect(await repo.deleteExpired(clock)).toBe(1);
+    expect(await rowCount()).toBe(1);
   });
 
   it('runs every 10 minutes', async () => {
@@ -225,10 +225,11 @@ describe('cleanup', () => {
     const stop = startCleanup(createNotesRepo(db), () => clock);
 
     clock = START + 61;
-    vi.advanceTimersByTime(CLEANUP_INTERVAL_MS - 1);
-    expect(rowCount()).toBe(1);
-    vi.advanceTimersByTime(1);
-    expect(rowCount()).toBe(0);
+    await vi.advanceTimersByTimeAsync(CLEANUP_INTERVAL_MS - 1);
+    expect(await rowCount()).toBe(1);
+    await vi.advanceTimersByTimeAsync(1);
+    vi.useRealTimers();
+    expect(await rowCount()).toBe(0);
     stop();
   });
 });
@@ -276,7 +277,7 @@ describe('rate limiting', () => {
     expect(refused.status).toBe(429);
     expect(refused.body.error).toBe('rate_limited');
     expect(refused.headers['retry-after']).toBe('600');
-    expect(rowCount()).toBe(2); // the refused note was not stored
+    expect(await rowCount()).toBe(2); // the refused note was not stored
 
     clock = START + 600;
     expect((await post()).status).toBe(201);
@@ -288,7 +289,7 @@ describe('rate limiting', () => {
     await request(strict).get(`/notes/${code}/meta`);
 
     expect((await request(strict).get(`/notes/${code}`)).status).toBe(429);
-    expect(rowCount()).toBe(1);
+    expect(await rowCount()).toBe(1);
 
     clock = START + 60;
     expect((await request(strict).get(`/notes/${code}`)).body.content).toBe('still here');

@@ -221,7 +221,7 @@ export function page({ card, aside = '', tab, title, canonical }: PageOptions, o
 
 <footer class="wrap footer">
   <a class="brand" href="/">${LOGO}tiny notes</a>
-  <span>No accounts. No tracking. Nothing we can read, and nothing kept after a note is gone.</span>
+  <span>No accounts. No tracking of who you are. Nothing we can read, and only anonymous counts kept after a note is gone.</span>
 </footer>
 </body>
 </html>

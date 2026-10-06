@@ -9,7 +9,11 @@ export interface Limit {
 
 // ponytail: counters live in this process's memory, keyed by client IP. Fine for one
 // process; if the app ever runs as several instances, move the counters to a shared store.
-export function rateLimit({ limit, windowSeconds }: Limit, now: () => number): RequestHandler {
+export function rateLimit(
+  { limit, windowSeconds }: Limit,
+  now: () => number,
+  onRefused: () => void = () => {},
+): RequestHandler {
   const clients = new Map<string, { count: number; resetAt: number }>();
 
   return (req, res, next) => {
@@ -29,6 +33,7 @@ export function rateLimit({ limit, windowSeconds }: Limit, now: () => number): R
 
     if (entry.count > limit) {
       const wait = entry.resetAt - time;
+      onRefused();
       res.setHeader('Retry-After', String(wait));
       next(new ApiError(429, 'rate_limited', `Too many requests. Try again in ${wait} seconds.`));
       return;

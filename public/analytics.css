@@ -1,0 +1,281 @@
+/* Analytics page. Loaded after styles.css and uses its colours, type scale and .wrap.
+   Design source: Figma "Tiny Notes — Brand", frame "Analytics / Desktop / Dark". */
+
+.analytics {
+  padding-block: clamp(1.75rem, 4vw, 2.75rem) clamp(3rem, 6vw, 4.5rem);
+}
+
+.analytics h1 {
+  font-size: var(--text-2xl);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.analytics .lede {
+  max-width: none;
+  margin-top: 0.5rem;
+}
+
+.brand-sub {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.updated,
+.empty {
+  font-size: var(--text-s);
+  color: var(--muted);
+}
+
+.empty {
+  margin-top: 2rem;
+  font-size: var(--text-l);
+}
+
+.tiles,
+.grid {
+  display: grid;
+  gap: var(--gap);
+  margin-top: var(--gap);
+}
+
+.tiles {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  margin-top: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+/* Six tracks: wide panels take four, the rest two, so rows read 4+2, 3+3 or 2+2+2. */
+.grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.tile,
+.panel {
+  padding: var(--pad);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.panel {
+  grid-column: span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.panel-wide {
+  grid-column: span 4;
+}
+
+/* The two panels after the charts are halves, not thirds. */
+.panel:nth-of-type(3),
+.panel:nth-of-type(4),
+.panel:nth-of-type(8),
+.panel:nth-of-type(9) {
+  grid-column: span 3;
+}
+
+@media (max-width: 62rem) {
+  .panel,
+  .panel-wide,
+  .panel:nth-of-type(3),
+  .panel:nth-of-type(4) {
+    grid-column: span 3;
+  }
+
+  .panel-wide {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 40rem) {
+  .panel,
+  .panel:nth-of-type(3),
+  .panel:nth-of-type(4) {
+    grid-column: 1 / -1;
+  }
+}
+
+.tile-label {
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.tile-value {
+  margin-block: 0.15rem 0.35rem;
+  font-size: clamp(2rem, 1.5rem + 2vw, 2.75rem);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tile-note,
+.panel-note {
+  font-size: var(--text-s);
+  color: var(--muted);
+}
+
+.panel h2 {
+  font-size: var(--text-l);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.panel-note {
+  margin-top: -0.8rem;
+}
+
+/* Bar lists */
+
+.bars {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.bars li {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, 8rem) minmax(2rem, 1fr) minmax(2.5rem, auto);
+  align-items: center;
+  gap: 0.75rem;
+  font-size: var(--text-s);
+}
+
+.bars b {
+  font-weight: 500;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.bars progress {
+  height: 10px;
+  margin: 0;
+  border-radius: 4px;
+  background: var(--well);
+}
+
+.bars progress::-webkit-progress-bar {
+  border-radius: 4px;
+  background: var(--well);
+}
+
+.bars progress::-webkit-progress-value {
+  border-radius: 4px;
+  background: var(--jade);
+  transition: none;
+}
+
+.bars progress::-moz-progress-bar {
+  border-radius: 4px;
+  background: var(--jade);
+}
+
+/* Min, median, average, max */
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(4rem, 1fr));
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
+.summary dt {
+  font-size: var(--text-s);
+  color: var(--muted);
+}
+
+.summary dd {
+  font-size: var(--text-l);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Column charts */
+
+.chart {
+  margin: 0;
+}
+
+.chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.col {
+  fill: var(--jade);
+}
+
+.col:hover {
+  fill: color-mix(in srgb, var(--jade) 70%, var(--ink));
+}
+
+.baseline {
+  stroke: var(--line);
+}
+
+.axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  font-size: var(--text-s);
+  color: var(--muted);
+}
+
+.chart details {
+  margin-top: 0.75rem;
+  font-size: var(--text-s);
+  color: var(--muted);
+}
+
+.chart summary {
+  width: fit-content;
+  cursor: pointer;
+}
+
+.chart table {
+  width: 100%;
+  margin-top: 0.5rem;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart th,
+.chart td {
+  padding: 0.3rem 0;
+  border-top: 1px solid var(--line);
+  font-weight: 400;
+  text-align: left;
+}
+
+.chart td {
+  color: var(--ink);
+  text-align: right;
+}
+
+/* Password form */
+
+.analytics-login {
+  display: grid;
+  place-items: center;
+  padding-block: clamp(3rem, 12vh, 8rem);
+}
+
+.analytics-login .card {
+  display: grid;
+  gap: 1rem;
+  width: min(100%, 24rem);
+}
+
+.analytics-login h1 {
+  font-size: var(--text-xl);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.analytics-login .field {
+  margin: 0;
+}

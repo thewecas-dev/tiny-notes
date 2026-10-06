@@ -1,5 +1,6 @@
 import { resolve } from 'node:path';
 import express, { type Express } from 'express';
+import { createAnalytics } from './analytics.js';
 import { generateCode as defaultGenerateCode } from './code.js';
 import type { Db } from './db.js';
 import { errorHandler, notFoundHandler } from './errors.js';
@@ -19,6 +20,8 @@ export interface AppDeps {
   siteUrl?: string;
   /** Number of reverse proxies in front of the app, so the real client IP is used. */
   trustProxy?: number;
+  /** Password for /analytics. When unset, the analytics page does not exist. */
+  analyticsPassword?: string;
   /** Per-client limits. `create` covers new notes; `requests` covers every note request. */
   limits?: { create?: Limit; requests?: Limit };
 }
@@ -37,10 +40,14 @@ export function createApp({
   generateCode = defaultGenerateCode,
   siteUrl,
   trustProxy = 0,
+  analyticsPassword,
   limits = {},
 }: AppDeps): Express {
   const app = express();
   const repo = createNotesRepo(db);
+  const analytics = createAnalytics(db);
+  // Counted in the background: analytics must never slow down or fail a request.
+  const countRefused = () => void analytics.count('rate_limited').catch(() => {});
   app.disable('x-powered-by');
   app.set('siteUrl', siteUrl);
   app.set('trust proxy', trustProxy);
@@ -62,12 +69,14 @@ export function createApp({
   });
   // Limits run before the body is read and before any handler, so a refused request
   // costs nothing and never uses a view.
-  app.use(['/notes', '/n'], rateLimit(limits.requests ?? DEFAULT_LIMITS.requests, now));
-  app.post('/notes', rateLimit(limits.create ?? DEFAULT_LIMITS.create, now));
+  app.use(['/notes', '/n'], rateLimit(limits.requests ?? DEFAULT_LIMITS.requests, now, countRefused));
+  app.post('/notes', rateLimit(limits.create ?? DEFAULT_LIMITS.create, now, countRefused));
+  // Ten password attempts per client per 10 minutes, so the password cannot be guessed at speed.
+  app.post('/analytics', rateLimit({ limit: 10, windowSeconds: 600 }, now, countRefused));
   app.use(express.json({ limit: MAX_BODY_BYTES }));
 
   registerNotesRoutes(app, { repo, now, generateCode });
-  registerPageRoutes(app, { repo, now });
+  registerPageRoutes(app, { repo, now, analytics, analyticsPassword });
   app.use(express.static(resolve(import.meta.dirname, '../public')));
 
   app.use(notFoundHandler);
