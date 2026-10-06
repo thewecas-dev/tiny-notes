@@ -29,8 +29,9 @@ export function errorHandler(log: (line: string) => void): ErrorRequestHandler {
   return (err, req, res, _next) => {
     const apiError = toApiError(err);
     if (apiError.status === 500) {
-      // Name and message only: never the request body.
-      log(`error ${err?.name ?? 'Error'}: ${err?.message ?? 'unknown'}`);
+      // The route pattern and the error's own stack: never the URL or the request body.
+      const route = (req.route as { path?: string } | undefined)?.path ?? '-';
+      log(`error on ${req.method} ${route}: ${err?.stack ?? err?.message ?? err}`);
     }
     // Browsers get a page; the API and anything that doesn't ask for HTML get JSON.
     if (!req.path.startsWith('/notes') && req.accepts(['json', 'html']) === 'html') {
